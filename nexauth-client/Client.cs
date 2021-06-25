@@ -58,7 +58,20 @@ namespace nexauth_client {
         }
 
         public void SendUsername() {
-
+            byte[] name = Encoding.ASCII.GetBytes(username);
+            CHelloPayload payload = new CHelloPayload();
+            //Payload.Send<CHelloPayload>(client.GetStream(), payload);
+            payload.Send(client.GetStream());
+            Console.WriteLine("Sent CHelloPayload (opcode 1)");
+            Console.WriteLine("Awaiting SHelloPayload (opcode 1)...");
+            SHelloPayload spayload = Payload.ReadAs<SHelloPayload>(client.GetStream());
+            Console.WriteLine($"Received payload! Opcode: {spayload.Opcode}");
+            Console.WriteLine($"Sending CSecureReqPayload...");
+            CSecureReqPayload secure_req = new CSecureReqPayload();;
+            secure_req.Send(client.GetStream());
+            Console.WriteLine($"Awaiting SSecureResPayload...");
+            SSecureResPayload secure_res = Payload.ReadAs<SSecureResPayload>(client.GetStream());
+            Console.WriteLine($"Received SSecureResPayload! Public key: ${secure_res.publicKey}");
         }
 
         bool connected;
