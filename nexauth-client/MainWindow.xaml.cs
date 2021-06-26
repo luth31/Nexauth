@@ -32,7 +32,7 @@ namespace nexauth_client {
                 ClearStatusText(HOST_STATUS_LABEL);
                 ClearStatusText(USERNAME_STATUS_LABEL);
                 client.Connect();
-                client.SendUsername();
+                client.BeginSecureConnection();
             }
             
         }

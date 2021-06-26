@@ -8,7 +8,12 @@ using System.Windows.Media;
 using System.Text.RegularExpressions;
 using System.Net.Sockets;
 using System.Text.Json;
+using System.Security.Cryptography;
+using System.Windows;
 using nexauth;
+using System.Diagnostics;
+using System.IO;
+using System.IO.Compression;
 
 namespace nexauth_client {
     class Client {
@@ -57,24 +62,49 @@ namespace nexauth_client {
             client.Close();
         }
 
-        public void SendUsername() {
-            byte[] name = Encoding.ASCII.GetBytes(username);
-            CHelloPayload payload = new CHelloPayload();
-            //Payload.Send<CHelloPayload>(client.GetStream(), payload);
-            payload.Send(client.GetStream());
-            Console.WriteLine("Sent CHelloPayload (opcode 1)");
-            Console.WriteLine("Awaiting SHelloPayload (opcode 1)...");
-            SHelloPayload spayload = Payload.ReadAs<SHelloPayload>(client.GetStream());
-            Console.WriteLine($"Received payload! Opcode: {spayload.Opcode}");
-            Console.WriteLine($"Sending CSecureReqPayload...");
-            CSecureReqPayload secure_req = new CSecureReqPayload();;
-            secure_req.Send(client.GetStream());
-            Console.WriteLine($"Awaiting SSecureResPayload...");
-            SSecureResPayload secure_res = Payload.ReadAs<SSecureResPayload>(client.GetStream());
-            Console.WriteLine($"Received SSecureResPayload! Public key: ${secure_res.publicKey}");
+        public async void BeginSecureConnection() {
+            CHelloPayload chello_payload = new CHelloPayload();
+            chello_payload.SendAsync(client);
+            Debug.WriteLine("Sent CHelloPayload");
+            SHelloPayload shello_payload = await Payload.ReadAsyncAs<SHelloPayload>(client);
+            Debug.WriteLine("Received SHelloPayload");
+            CBeginSecurePayload csecure_payload = new CBeginSecurePayload();
+            csecure_payload.SendAsync(client);
+            Debug.WriteLine("Sent CBeginSecurePayload");
+            SSendPubkeyPayload spubkey_payload = await Payload.ReadAsyncAs<SSendPubkeyPayload>(client);
+            Debug.WriteLine($"Received SSendPubkeyPayload pubkey {spubkey_payload.publicKey}");
+            cRSAProvider = new RSACryptoServiceProvider(4096);
+            sRSAProvider = new RSACryptoServiceProvider();
+            sRSAProvider.FromXmlString(spubkey_payload.publicKey);
+            string pubkey = cRSAProvider.ToXmlString(false);
+            Debug.WriteLine($"RSA key: {pubkey}\nRSA key size: {pubkey.Length}");
+            CSendPubkeyPayload cpubkey1_payload = new CSendPubkeyPayload(pubkey[..(pubkey.Length/2)]);
+            CSendPubkeyPayload cpubkey2_payload = new CSendPubkeyPayload(pubkey[(pubkey.Length/2)..]);
+            cpubkey1_payload.SendEncryptedAsync(client, sRSAProvider);
+            cpubkey2_payload.SendEncryptedAsync(client, sRSAProvider);
+            Debug.WriteLine("Sent CSendPubkeyPayload");
+            // TODO: Await for challenge and complete it
         }
 
-        bool connected;
+        public static byte[] Compress(byte[] data) {
+            MemoryStream output = new MemoryStream();
+            using (DeflateStream dstream = new DeflateStream(output, CompressionLevel.Optimal)) {
+                dstream.Write(data, 0, data.Length);
+            }
+            return output.ToArray();
+        }
+
+        public static byte[] Decompress(byte[] data) {
+            MemoryStream input = new MemoryStream(data);
+            MemoryStream output = new MemoryStream();
+            using (DeflateStream dstream = new DeflateStream(input, CompressionMode.Decompress)) {
+                dstream.CopyTo(output);
+            }
+            return output.ToArray();
+        }
+
+        private RSACryptoServiceProvider cRSAProvider;
+        private RSACryptoServiceProvider sRSAProvider;
         private TcpClient client;
         private Int32 port;
         private MainWindow parent;
