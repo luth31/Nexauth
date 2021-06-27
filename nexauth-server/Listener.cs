@@ -55,7 +55,29 @@ namespace nexauth_server {
                 CSendPubkeyPayload cpubkey1_payload = await EncryptedPayload.ReadAsyncAs<CSendPubkeyPayload>(client, sProvider);
                 CSendPubkeyPayload cpubkey2_payload = await EncryptedPayload.ReadAsyncAs<CSendPubkeyPayload>(client, sProvider);
                 string cpubkey = String.Concat(cpubkey1_payload.publicKey, cpubkey2_payload.publicKey);
-                Console.WriteLine($"Received encrypted public key from client: {cpubkey}");
+                Console.WriteLine($"Received encrypted public key from client");
+                cProvider = new RSACryptoServiceProvider();
+                cProvider.FromXmlString(cpubkey);
+                RNGCryptoServiceProvider cprng = new RNGCryptoServiceProvider();
+                byte[] key = new byte[16];
+                byte[] nonce = new byte[8];
+                cprng.GetBytes(key);
+                cprng.GetBytes(nonce);
+                aesProvider = new AESProvider(AESProvider.AES_KEY_SIZE.AES_KEY_128, key, nonce);
+                SSendAesKeyPayload aes_payload = new SSendAesKeyPayload(key, nonce);
+                aes_payload.SendEncryptedAsync(client, cProvider);
+                Console.WriteLine($"Sent SSendAesKeyPayload");
+                CBeginAuthPayload cauth_payload = await EncryptedPayload.ReadAsyncAs<CBeginAuthPayload>(client, aesProvider);
+                Console.WriteLine($"Received CBeginAuthPayload");
+                SAuthStandbyPayload sauth_payload = new SAuthStandbyPayload();
+                sauth_payload.SendEncryptedAsync(client, aesProvider);
+                Console.WriteLine($"Sent SAuthStandbyPayload");
+                Console.WriteLine($"Simulating authentication: Sleep 5000");
+                await Task.Delay(5000);
+                SAuthSuccessPayload slogged_payload = new SAuthSuccessPayload();
+                slogged_payload.SendEncryptedAsync(client, aesProvider);
+                Console.WriteLine($"User authenticated! Closing connection.");
+                client.Close();
             }
             catch (Exception e){
                 Console.WriteLine($"Failed client authentication. Reason: {e.Message}");
@@ -79,6 +101,7 @@ namespace nexauth_server {
             return output.ToArray();
         }
 
+        private AESProvider aesProvider;
         private RSACryptoServiceProvider cProvider;
         private readonly RSACryptoServiceProvider sProvider;
         private readonly TcpListener listener;

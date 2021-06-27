@@ -15,8 +15,10 @@ namespace nexauth {
         CLIENT_BEGIN_SECURE = 3,
         SERVER_SEND_PUBKEY = 4,
         CLIENT_SEND_PUBKEY = 5,
-        SERVER_CHALLENGE = 6,
-        CLIENT_RESPONSE = 7
+        SERVER_SEND_AESKEY = 6,
+        CLIENT_BEGIN_AUTH = 7,
+        SERVER_AUTH_STANDBY = 8,
+        SERVER_AUTH_SUCCESS = 9
     }
     public static class Payload {
         public static T ReadAs<T>(TcpClient client) {
@@ -77,6 +79,37 @@ namespace nexauth {
             T payload = JsonSerializer.Deserialize<T>(Encoding.UTF8.GetString(payload_decrypted));
             return payload;
         }
+
+        public static T ReadAs<T>(TcpClient client, AESProvider provider) {
+            // Read payload size
+            byte[] size_buffer = new byte[4];
+            client.GetStream().Read(size_buffer, 0, 4);
+            // Convert buffer to Int32
+            Int32 size = BitConverter.ToInt32(size_buffer);
+            // Read payload synchronously
+            byte[] payload_buffer = new byte[size];
+            client.GetStream().Read(payload_buffer, 0, size);
+            // Decrypt data using given provider
+            byte[] payload_decrypted = provider.Decrypt(payload_buffer);
+            // Convert and deserialize payload to T type
+            T payload = JsonSerializer.Deserialize<T>(Encoding.UTF8.GetString(payload_decrypted));
+            return payload;
+        }
+        public async static Task<T> ReadAsyncAs<T>(TcpClient client, AESProvider provider) {
+            // Read payload size
+            byte[] size_buffer = new byte[4];
+            await client.GetStream().ReadAsync(size_buffer, 0, 4);
+            // Convert buffer to Int32
+            Int32 size = BitConverter.ToInt32(size_buffer);
+            // Read payload asynchronously
+            byte[] payload_buffer = new byte[size];
+            await client.GetStream().ReadAsync(payload_buffer, 0, size);
+            // Decrypt data using given provider
+            byte[] payload_decrypted = provider.Decrypt(payload_buffer);
+            // Decode and deserialize payload to T type
+            T payload = JsonSerializer.Deserialize<T>(Encoding.UTF8.GetString(payload_decrypted));
+            return payload;
+        }
     }
     public class AbstractPayload {
         public Opcodes Opcode { get; set; } = Opcodes.NULL;
@@ -110,6 +143,22 @@ namespace nexauth {
             await client.GetStream().WriteAsync(size, 0, size.Length);
             await client.GetStream().WriteAsync(payload_encrypted, 0, payload_encrypted.Length);
         }
+
+        public void SendEncrypted(TcpClient client, AESProvider provider) {
+            byte[] payload = Encoding.UTF8.GetBytes(JsonSerializer.Serialize(this, this.GetType()));
+            byte[] payload_encrypted = provider.Encrypt(payload);
+            byte[] size = BitConverter.GetBytes(payload_encrypted.Length);
+            client.GetStream().Write(size, 0, size.Length);
+            client.GetStream().Write(payload_encrypted, 0, payload_encrypted.Length);
+        }
+
+        public async void SendEncryptedAsync(TcpClient client, AESProvider provider) {
+            byte[] payload = Encoding.UTF8.GetBytes(JsonSerializer.Serialize(this, this.GetType()));
+            byte[] payload_encrypted = provider.Encrypt(payload);
+            byte[] size = BitConverter.GetBytes(payload_encrypted.Length);
+            await client.GetStream().WriteAsync(size, 0, size.Length);
+            await client.GetStream().WriteAsync(payload_encrypted, 0, payload_encrypted.Length);
+        }
     };
 
     public class CHelloPayload : AbstractPayload {
@@ -131,24 +180,64 @@ namespace nexauth {
     }
 
     public class SSendPubkeyPayload : AbstractPayload {
-        public SSendPubkeyPayload(string pubKey = "") {
-            Opcode = Opcodes.SERVER_SEND_PUBKEY;
+        public SSendPubkeyPayload(string pubKey = "") : this() {
             this.publicKey = pubKey;
         }
 
-        public SSendPubkeyPayload() { }
+        public SSendPubkeyPayload() {
+            Opcode = Opcodes.SERVER_SEND_PUBKEY;
+        }
 
         public string publicKey { get; set; }
     }
 
     public class CSendPubkeyPayload : AbstractPayload {
-        public CSendPubkeyPayload(string pubKey = "") {
-            Opcode = Opcodes.CLIENT_SEND_PUBKEY;
+        public CSendPubkeyPayload(string pubKey = "") : this() {
             this.publicKey = pubKey;
         }
 
-        public CSendPubkeyPayload() { }
+        public CSendPubkeyPayload() {
+            Opcode = Opcodes.CLIENT_SEND_PUBKEY;
+        }
 
         public string publicKey { get; set; }
+    }
+
+    public class SSendAesKeyPayload : AbstractPayload {
+        public SSendAesKeyPayload(byte[] key, byte[] nonce) : this() {
+            this.key = key;
+            this.nonce = nonce;
+        }
+
+        public SSendAesKeyPayload() {
+            Opcode = Opcodes.SERVER_SEND_AESKEY;
+        }
+
+        public byte[] key { get; set; }
+        public byte[] nonce { get; set; }
+    }
+
+    public class CBeginAuthPayload : AbstractPayload {
+        public CBeginAuthPayload(string username = "") : this() {
+            this.username = username;
+        }
+
+        public CBeginAuthPayload() {
+            Opcode = Opcodes.CLIENT_BEGIN_AUTH;
+        }
+
+        public string username { get; set; }
+    }
+
+    public class SAuthStandbyPayload : AbstractPayload {
+        public SAuthStandbyPayload() {
+            Opcode = Opcodes.SERVER_AUTH_STANDBY;
+        }
+    }
+
+    public class SAuthSuccessPayload : AbstractPayload {
+        public SAuthSuccessPayload() {
+            Opcode = Opcodes.SERVER_AUTH_SUCCESS;
+        }
     }
 }
