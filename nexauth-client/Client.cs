@@ -65,44 +65,32 @@ namespace nexauth_client {
         public async void BeginSecureConnection() {
             CHelloPayload chello_payload = new CHelloPayload();
             chello_payload.SendAsync(client);
-            Debug.WriteLine("Sent CHelloPayload");
             SHelloPayload shello_payload = await Payload.ReadAsyncAs<SHelloPayload>(client);
-            Debug.WriteLine("Received SHelloPayload");
             CBeginSecurePayload csecure_payload = new CBeginSecurePayload();
             csecure_payload.SendAsync(client);
-            Debug.WriteLine("Sent CBeginSecurePayload");
             SSendPubkeyPayload spubkey_payload = await Payload.ReadAsyncAs<SSendPubkeyPayload>(client);
-            Debug.WriteLine($"Received SSendPubkeyPayload pubkey {spubkey_payload.publicKey}");
             cRSAProvider = new RSACryptoServiceProvider(4096);
             sRSAProvider = new RSACryptoServiceProvider();
             sRSAProvider.FromXmlString(spubkey_payload.publicKey);
             string pubkey = cRSAProvider.ToXmlString(false);
-            Debug.WriteLine($"RSA key: {pubkey}\nRSA key size: {pubkey.Length}");
             CSendPubkeyPayload cpubkey1_payload = new CSendPubkeyPayload(pubkey[..(pubkey.Length/2)]);
             CSendPubkeyPayload cpubkey2_payload = new CSendPubkeyPayload(pubkey[(pubkey.Length/2)..]);
             cpubkey1_payload.SendEncryptedAsync(client, sRSAProvider);
             cpubkey2_payload.SendEncryptedAsync(client, sRSAProvider);
-            Debug.WriteLine("Sent CSendPubkeyPayload");
-            // TODO: Await for challenge and complete it
+            SSendAesKeyPayload aes_payload = await EncryptedPayload.ReadAsyncAs<SSendAesKeyPayload>(client, cRSAProvider);
+            Debug.WriteLine($"Received payload with key: {Encoding.UTF8.GetString(aes_payload.key)}");
+            aesProvider = new AESProvider(AESProvider.AES_KEY_SIZE.AES_KEY_128, aes_payload.key, aes_payload.nonce);
+            CBeginAuthPayload cauth_payload = new CBeginAuthPayload(username);
+            cauth_payload.SendEncryptedAsync(client, aesProvider);
+            SAuthStandbyPayload sauth_payload = await EncryptedPayload.ReadAsyncAs<SAuthStandbyPayload>(client, aesProvider);
+            parent.UpdateStatusText(parent.STATUS_LABEL, "Awaiting authentication...", Brushes.Orange);
+            SAuthSuccessPayload slogged_payload = await EncryptedPayload.ReadAsyncAs<SAuthSuccessPayload>(client, aesProvider);
+            parent.UpdateStatusText(parent.STATUS_LABEL, "Authenticated!", Brushes.Green);
+            MessageBox.Show("Authentication successful!");
+            client.Close();
         }
 
-        public static byte[] Compress(byte[] data) {
-            MemoryStream output = new MemoryStream();
-            using (DeflateStream dstream = new DeflateStream(output, CompressionLevel.Optimal)) {
-                dstream.Write(data, 0, data.Length);
-            }
-            return output.ToArray();
-        }
-
-        public static byte[] Decompress(byte[] data) {
-            MemoryStream input = new MemoryStream(data);
-            MemoryStream output = new MemoryStream();
-            using (DeflateStream dstream = new DeflateStream(input, CompressionMode.Decompress)) {
-                dstream.CopyTo(output);
-            }
-            return output.ToArray();
-        }
-
+        private AESProvider aesProvider;
         private RSACryptoServiceProvider cRSAProvider;
         private RSACryptoServiceProvider sRSAProvider;
         private TcpClient client;
