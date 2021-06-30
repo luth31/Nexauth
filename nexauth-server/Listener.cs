@@ -9,6 +9,8 @@ using System.Security.Cryptography;
 using nexauth;
 using System.IO;
 using System.IO.Compression;
+using nexauth_server.Models;
+using Microsoft.EntityFrameworkCore;
 
 namespace nexauth_server {
     class Listener {
@@ -27,6 +29,10 @@ namespace nexauth_server {
             Console.WriteLine("Generating RSA 4096-bit key pair...");
             sProvider = new RSACryptoServiceProvider(4096);
             cProvider = new RSACryptoServiceProvider();
+            var optionsBuilder = new DbContextOptionsBuilder<AuthContext>();
+            optionsBuilder.UseInMemoryDatabase("AuthContext");
+            authContext = new AuthContext(optionsBuilder.Options);
+            cprng = new RNGCryptoServiceProvider();
             Console.WriteLine("Keypair generated!");
         }
 
@@ -37,71 +43,94 @@ namespace nexauth_server {
             while (true) {
                 TcpClient client = await listener.AcceptTcpClientAsync();
                 Console.WriteLine("Client connected!");
-                HandleClientAuth(client);
+                AuthClient(client);
             }
         }
 
-        private async void HandleClientAuth(TcpClient client) {
+        private async void AuthClient(TcpClient client) {
             try {
-                Console.WriteLine("Awaiting CHelloPayload");
-                CHelloPayload chello_payload = await Payload.ReadAsyncAs<CHelloPayload>(client);
-                Console.WriteLine("Received CHelloPayload");
-                SHelloPayload shello_payload = new SHelloPayload();
-                shello_payload.SendAsync(client);
-                Console.WriteLine("Sent SHelloPayload");
-                CBeginSecurePayload csecure_payload = await Payload.ReadAsyncAs<CBeginSecurePayload>(client);
-                SSendPubkeyPayload spubkey_payload = new SSendPubkeyPayload(sProvider.ToXmlString(false));
-                spubkey_payload.SendAsync(client);
-                CSendPubkeyPayload cpubkey1_payload = await EncryptedPayload.ReadAsyncAs<CSendPubkeyPayload>(client, sProvider);
-                CSendPubkeyPayload cpubkey2_payload = await EncryptedPayload.ReadAsyncAs<CSendPubkeyPayload>(client, sProvider);
-                string cpubkey = String.Concat(cpubkey1_payload.publicKey, cpubkey2_payload.publicKey);
-                Console.WriteLine($"Received encrypted public key from client");
-                cProvider = new RSACryptoServiceProvider();
-                cProvider.FromXmlString(cpubkey);
-                RNGCryptoServiceProvider cprng = new RNGCryptoServiceProvider();
-                byte[] key = new byte[16];
-                byte[] nonce = new byte[8];
-                cprng.GetBytes(key);
-                cprng.GetBytes(nonce);
-                aesProvider = new AESProvider(AESProvider.AES_KEY_SIZE.AES_KEY_128, key, nonce);
-                SSendAesKeyPayload aes_payload = new SSendAesKeyPayload(key, nonce);
-                aes_payload.SendEncryptedAsync(client, cProvider);
-                Console.WriteLine($"Sent SSendAesKeyPayload");
-                CBeginAuthPayload cauth_payload = await EncryptedPayload.ReadAsyncAs<CBeginAuthPayload>(client, aesProvider);
-                Console.WriteLine($"Received CBeginAuthPayload");
-                SAuthStandbyPayload sauth_payload = new SAuthStandbyPayload();
-                sauth_payload.SendEncryptedAsync(client, aesProvider);
-                Console.WriteLine($"Sent SAuthStandbyPayload");
-                Console.WriteLine($"Simulating authentication: Sleep 5000");
-                await Task.Delay(5000);
-                SAuthSuccessPayload slogged_payload = new SAuthSuccessPayload();
-                slogged_payload.SendEncryptedAsync(client, aesProvider);
-                Console.WriteLine($"User authenticated! Closing connection.");
-                client.Close();
+                await HandleHello(client);
+                await HandleSecureChannel(client);
+                await HandleDoAuth(client);
             }
             catch (Exception e){
                 Console.WriteLine($"Failed client authentication. Reason: {e.Message}");
+                client.Close();
             }
         }
 
-        public static byte[] Compress(byte[] data) {
-            MemoryStream output = new MemoryStream();
-            using (DeflateStream dstream = new DeflateStream(output, CompressionLevel.Optimal)) {
-                dstream.Write(data, 0, data.Length);
-            }
-            return output.ToArray();
+        private async Task HandleHello(TcpClient client) {
+            CHelloPayload chello_payload = await Payload.ReadAsyncAs<CHelloPayload>(client);
+            SHelloPayload shello_payload = new SHelloPayload();
+            shello_payload.SendAsync(client);
         }
 
-        public static byte[] Decompress(byte[] data) {
-            MemoryStream input = new MemoryStream(data);
-            MemoryStream output = new MemoryStream();
-            using (DeflateStream dstream = new DeflateStream(input, CompressionMode.Decompress)) {
-                dstream.CopyTo(output);
-            }
-            return output.ToArray();
+        private async Task HandleSecureChannel(TcpClient client) {
+            CBeginSecurePayload csecure_payload = await Payload.ReadAsyncAs<CBeginSecurePayload>(client);
+            SSendPubkeyPayload spubkey_payload = new SSendPubkeyPayload(sProvider.ToXmlString(false));
+            spubkey_payload.SendAsync(client);
+            CSendPubkeyPayload cpubkey1_payload = await EncryptedPayload.ReadAsyncAs<CSendPubkeyPayload>(client, sProvider);
+            CSendPubkeyPayload cpubkey2_payload = await EncryptedPayload.ReadAsyncAs<CSendPubkeyPayload>(client, sProvider);
+            string cpubkey = String.Concat(cpubkey1_payload.publicKey, cpubkey2_payload.publicKey);
+            cProvider = new RSACryptoServiceProvider();
+            cProvider.FromXmlString(cpubkey);
+            byte[] key = new byte[16];
+            byte[] nonce = new byte[8];
+            cprng.GetBytes(key);
+            cprng.GetBytes(nonce);
+            aesProvider = new AESProvider(AESProvider.AES_KEY_SIZE.AES_KEY_128, key, nonce);
+            SSendAesKeyPayload aes_payload = new SSendAesKeyPayload(key, nonce);
+            aes_payload.SendEncryptedAsync(client, cProvider);
         }
 
+        private async Task HandleDoAuth(TcpClient client) {
+            CBeginAuthPayload cauth_payload = await EncryptedPayload.ReadAsyncAs<CBeginAuthPayload>(client, aesProvider);
+            SAuthStandbyPayload sauth_payload = new SAuthStandbyPayload();
+            sauth_payload.SendEncryptedAsync(client, aesProvider);
+            SAuthNewStatePayload slogged_payload = new SAuthNewStatePayload();
+            var user = GetUser(cauth_payload.username);
+            if (user == null) {
+                slogged_payload.success = false;
+                slogged_payload.message = "User doesn't exist!";
+            }
+            /*else if (!await AwaitAuthentication()) {
+                slogged_payload.success = false;
+                slogged_payload.message = "Authentication timed out!";
+            }*/
+            else {
+                CreateAuthRequest(user);
+                slogged_payload.success = false;
+                slogged_payload.message = "WIP";
+            }
+            slogged_payload.SendEncryptedAsync(client, aesProvider);
+            client.Close();
+        }
+
+        private void CreateAuthRequest(User user) {
+            var challenge = CreateChallenge();
+            var outdated = authContext.AuthRequests.Where(r => r.UserId == user.Id).ToList();
+            foreach (var entry in outdated) {
+                authContext.Remove(entry);
+            }
+            var request = new AuthRequest { UserId = user.Id, Challenge = challenge, Completed = false };
+            authContext.AuthRequests.Add(request);
+            authContext.SaveChanges();
+            Console.WriteLine($"Created authentication request for user {user.Username}. Challenge: {challenge}");
+        }
+
+        private string CreateChallenge() {
+            byte[] buffer = new byte[128];
+            cprng.GetBytes(buffer);
+            return Convert.ToBase64String(buffer); ;
+        }
+
+        private User GetUser(string username) {
+            return authContext.User.Where(u => u.Username == username).FirstOrDefault();
+        }
+
+        private AuthContext authContext;
         private AESProvider aesProvider;
+        RNGCryptoServiceProvider cprng;
         private RSACryptoServiceProvider cProvider;
         private readonly RSACryptoServiceProvider sProvider;
         private readonly TcpListener listener;
