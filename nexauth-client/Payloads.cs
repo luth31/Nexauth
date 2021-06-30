@@ -1,6 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Text.Json;
@@ -18,23 +16,35 @@ namespace nexauth {
         SERVER_SEND_AESKEY = 6,
         CLIENT_BEGIN_AUTH = 7,
         SERVER_AUTH_STANDBY = 8,
-        SERVER_AUTH_SUCCESS = 9
+        SERVER_AUTH_STATE_CHANGED = 9
     }
-    public static class Payload {
-        public static T ReadAs<T>(TcpClient client) {
-            // Read payload size
+    public class PayloadHelper {
+        public static void SendPayload(byte[] payload, TcpClient client) {
+            byte[] size = BitConverter.GetBytes(payload.Length);
+            client.GetStream().Write(size, 0, size.Length);
+            client.GetStream().Write(payload, 0, payload.Length);
+        }
+
+        public static async void SendPayloadAsync(byte[] payload, TcpClient client) {
+            byte[] size = BitConverter.GetBytes(payload.Length);
+            await client.GetStream().WriteAsync(size, 0, size.Length);
+            await client.GetStream().WriteAsync(payload, 0, payload.Length);
+        }
+
+        public static byte[] ReadPayload(TcpClient client) {
+            // Read payload size asynchronously
             byte[] size_buffer = new byte[4];
             client.GetStream().Read(size_buffer, 0, 4);
             // Convert buffer to Int32
             Int32 size = BitConverter.ToInt32(size_buffer);
-            // Read payload synchronously
+            // Read payload asynchronously
             byte[] payload_buffer = new byte[size];
             client.GetStream().Read(payload_buffer, 0, size);
-            // Convert and deserialize payload to T type
-            T payload = JsonSerializer.Deserialize<T>(Encoding.UTF8.GetString(payload_buffer));
-            return payload;
+            // Return byte array
+            return payload_buffer;
         }
-        public async static Task<T> ReadAsyncAs<T>(TcpClient client) {
+
+        public static async Task<byte[]> ReadPayloadAsync(TcpClient client) {
             // Read payload size
             byte[] size_buffer = new byte[4];
             await client.GetStream().ReadAsync(size_buffer, 0, 4);
@@ -43,71 +53,73 @@ namespace nexauth {
             // Read payload asynchronously
             byte[] payload_buffer = new byte[size];
             await client.GetStream().ReadAsync(payload_buffer, 0, size);
-            // Decode and deserialize payload to T type
+            // Return byte array
+            return payload_buffer;
+        }
+
+        public static void PrintPayload(Opcodes opcode) {
+            if (Print)
+                Console.WriteLine($"Sent payload {opcode}");
+        }
+
+        public static void PrintPayload<T>(T payload) {
+            if (Print)
+                Console.WriteLine($"Received payload {((AbstractPayload)(object)payload).Opcode}");
+        }
+
+        static bool Print = true;
+    }
+
+    public static class Payload {
+        public static T ReadAs<T>(TcpClient client) {
+            byte[] payload_buffer = PayloadHelper.ReadPayload(client);
             T payload = JsonSerializer.Deserialize<T>(Encoding.UTF8.GetString(payload_buffer));
+            PayloadHelper.PrintPayload(payload);
+            return payload;
+        }
+        public async static Task<T> ReadAsyncAs<T>(TcpClient client) {
+            byte[] payload_buffer = await PayloadHelper.ReadPayloadAsync(client);
+            T payload = JsonSerializer.Deserialize<T>(Encoding.UTF8.GetString(payload_buffer));
+            PayloadHelper.PrintPayload(payload);
             return payload;
         }
     }
     public static class EncryptedPayload {
         public static T ReadAs<T>(TcpClient client, RSACryptoServiceProvider provider) {
-            // Read payload size
-            byte[] size_buffer = new byte[4];
-            client.GetStream().Read(size_buffer, 0, 4);
-            // Convert buffer to Int32
-            Int32 size = BitConverter.ToInt32(size_buffer);
-            // Read payload synchronously
-            byte[] payload_buffer = new byte[size];
-            client.GetStream().Read(payload_buffer, 0, size);
+            byte[] payload_buffer = PayloadHelper.ReadPayload(client);
             // Decrypt data using given provider
             byte[] payload_decrypted = provider.Decrypt(payload_buffer, false);
             // Convert and deserialize payload to T type
             T payload = JsonSerializer.Deserialize<T>(Encoding.UTF8.GetString(payload_decrypted));
+            PayloadHelper.PrintPayload(payload);
             return payload;
         }
         public async static Task<T> ReadAsyncAs<T>(TcpClient client, RSACryptoServiceProvider provider) {
-            // Read payload size
-            byte[] size_buffer = new byte[4];
-            await client.GetStream().ReadAsync(size_buffer, 0, 4);
-            // Convert buffer to Int32
-            Int32 size = BitConverter.ToInt32(size_buffer);
-            // Read payload asynchronously
-            byte[] payload_buffer = new byte[size];
-            await client.GetStream().ReadAsync(payload_buffer, 0, size);
+            byte[] payload_buffer = await PayloadHelper.ReadPayloadAsync(client);
             // Decrypt data using given provider
             byte[] payload_decrypted = provider.Decrypt(payload_buffer, false);
             // Decode and deserialize payload to T type
             T payload = JsonSerializer.Deserialize<T>(Encoding.UTF8.GetString(payload_decrypted));
+            PayloadHelper.PrintPayload(payload);
             return payload;
         }
 
         public static T ReadAs<T>(TcpClient client, AESProvider provider) {
-            // Read payload size
-            byte[] size_buffer = new byte[4];
-            client.GetStream().Read(size_buffer, 0, 4);
-            // Convert buffer to Int32
-            Int32 size = BitConverter.ToInt32(size_buffer);
-            // Read payload synchronously
-            byte[] payload_buffer = new byte[size];
-            client.GetStream().Read(payload_buffer, 0, size);
+            byte[] payload_buffer = PayloadHelper.ReadPayload(client);
             // Decrypt data using given provider
             byte[] payload_decrypted = provider.Decrypt(payload_buffer);
             // Convert and deserialize payload to T type
             T payload = JsonSerializer.Deserialize<T>(Encoding.UTF8.GetString(payload_decrypted));
+            PayloadHelper.PrintPayload(payload);
             return payload;
         }
         public async static Task<T> ReadAsyncAs<T>(TcpClient client, AESProvider provider) {
-            // Read payload size
-            byte[] size_buffer = new byte[4];
-            await client.GetStream().ReadAsync(size_buffer, 0, 4);
-            // Convert buffer to Int32
-            Int32 size = BitConverter.ToInt32(size_buffer);
-            // Read payload asynchronously
-            byte[] payload_buffer = new byte[size];
-            await client.GetStream().ReadAsync(payload_buffer, 0, size);
+            byte[] payload_buffer = await PayloadHelper.ReadPayloadAsync(client);
             // Decrypt data using given provider
             byte[] payload_decrypted = provider.Decrypt(payload_buffer);
             // Decode and deserialize payload to T type
             T payload = JsonSerializer.Deserialize<T>(Encoding.UTF8.GetString(payload_decrypted));
+            PayloadHelper.PrintPayload(payload);
             return payload;
         }
     }
@@ -116,49 +128,40 @@ namespace nexauth {
 
         public void Send(TcpClient client) {
             byte[] payload = Encoding.UTF8.GetBytes(JsonSerializer.Serialize(this, this.GetType()));
-            byte[] size = BitConverter.GetBytes(payload.Length);
-            client.GetStream().WriteAsync(size, 0, size.Length);
-            client.GetStream().Write(payload, 0, payload.Length);
+            PayloadHelper.PrintPayload(Opcode);
+            PayloadHelper.SendPayload(payload, client);
         }
 
-        public async void SendAsync(TcpClient client) {
+        public void SendAsync(TcpClient client) {
             byte[] payload = Encoding.ASCII.GetBytes(JsonSerializer.Serialize(this, this.GetType()));
-            byte[] size = BitConverter.GetBytes(payload.Length);
-            await client.GetStream().WriteAsync(size, 0, size.Length);
-            await client.GetStream().WriteAsync(payload, 0, payload.Length);
+            PayloadHelper.PrintPayload(Opcode);
+            PayloadHelper.SendPayloadAsync(payload, client);
         }
 
         public void SendEncrypted(TcpClient client, RSACryptoServiceProvider provider) {
-            byte[] payload = Encoding.UTF8.GetBytes(JsonSerializer.Serialize(this, this.GetType()));
-            byte[] payload_encrypted = provider.Encrypt(payload, false);
-            byte[] size = BitConverter.GetBytes(payload_encrypted.Length);
-            client.GetStream().Write(size, 0, size.Length);
-            client.GetStream().Write(payload_encrypted, 0, payload_encrypted.Length);
+            byte[] payload = provider.Encrypt(Encoding.UTF8.GetBytes(JsonSerializer.Serialize(this, this.GetType())), false);
+            PayloadHelper.PrintPayload(Opcode);
+            PayloadHelper.SendPayload(payload, client);
         }
 
-        public async void SendEncryptedAsync(TcpClient client, RSACryptoServiceProvider provider) {
-            byte[] payload = Encoding.UTF8.GetBytes(JsonSerializer.Serialize(this, this.GetType()));
-            byte[] payload_encrypted = provider.Encrypt(payload, false);
-            byte[] size = BitConverter.GetBytes(payload_encrypted.Length);
-            await client.GetStream().WriteAsync(size, 0, size.Length);
-            await client.GetStream().WriteAsync(payload_encrypted, 0, payload_encrypted.Length);
+        public void SendEncryptedAsync(TcpClient client, RSACryptoServiceProvider provider) {
+            byte[] payload = provider.Encrypt(Encoding.UTF8.GetBytes(JsonSerializer.Serialize(this, this.GetType())), false);
+            PayloadHelper.PrintPayload(Opcode);
+            PayloadHelper.SendPayloadAsync(payload, client);
         }
 
         public void SendEncrypted(TcpClient client, AESProvider provider) {
-            byte[] payload = Encoding.UTF8.GetBytes(JsonSerializer.Serialize(this, this.GetType()));
-            byte[] payload_encrypted = provider.Encrypt(payload);
-            byte[] size = BitConverter.GetBytes(payload_encrypted.Length);
-            client.GetStream().Write(size, 0, size.Length);
-            client.GetStream().Write(payload_encrypted, 0, payload_encrypted.Length);
+            byte[] payload = provider.Encrypt(Encoding.UTF8.GetBytes(JsonSerializer.Serialize(this, this.GetType())));
+            PayloadHelper.PrintPayload(Opcode);
+            PayloadHelper.SendPayload(payload, client);
         }
 
-        public async void SendEncryptedAsync(TcpClient client, AESProvider provider) {
-            byte[] payload = Encoding.UTF8.GetBytes(JsonSerializer.Serialize(this, this.GetType()));
-            byte[] payload_encrypted = provider.Encrypt(payload);
-            byte[] size = BitConverter.GetBytes(payload_encrypted.Length);
-            await client.GetStream().WriteAsync(size, 0, size.Length);
-            await client.GetStream().WriteAsync(payload_encrypted, 0, payload_encrypted.Length);
+        public void SendEncryptedAsync(TcpClient client, AESProvider provider) {
+            byte[] payload = provider.Encrypt(Encoding.UTF8.GetBytes(JsonSerializer.Serialize(this, this.GetType())));
+            PayloadHelper.PrintPayload(Opcode);
+            PayloadHelper.SendPayloadAsync(payload, client);
         }
+
     };
 
     public class CHelloPayload : AbstractPayload {
@@ -235,9 +238,12 @@ namespace nexauth {
         }
     }
 
-    public class SAuthSuccessPayload : AbstractPayload {
-        public SAuthSuccessPayload() {
-            Opcode = Opcodes.SERVER_AUTH_SUCCESS;
+    public class SAuthNewStatePayload : AbstractPayload {
+        public SAuthNewStatePayload() {
+            Opcode = Opcodes.SERVER_AUTH_STATE_CHANGED;
         }
+
+        public bool success { get; set; }
+        public string message { get; set; }
     }
 }
