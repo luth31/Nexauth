@@ -11,6 +11,8 @@ using System.IO;
 using System.IO.Compression;
 using nexauth_server.Models;
 using Microsoft.EntityFrameworkCore;
+using dotAPNS;
+using System.Net.Http;
 
 namespace nexauth_server {
     class Listener {
@@ -29,10 +31,8 @@ namespace nexauth_server {
             Console.WriteLine("Generating RSA 4096-bit key pair...");
             sProvider = new RSACryptoServiceProvider(4096);
             cProvider = new RSACryptoServiceProvider();
-            var optionsBuilder = new DbContextOptionsBuilder<AuthContext>();
-            optionsBuilder.UseInMemoryDatabase("AuthContext");
-            authContext = new AuthContext(optionsBuilder.Options);
             cprng = new RNGCryptoServiceProvider();
+            APNSProvider = ApnsClient.CreateUsingCert("aps.p12").UseSandbox();
             Console.WriteLine("Keypair generated!");
         }
 
@@ -56,6 +56,7 @@ namespace nexauth_server {
             catch (Exception e){
                 Console.WriteLine($"Failed client authentication. Reason: {e.Message}");
                 client.Close();
+                Console.WriteLine("Closing connection!");
             }
         }
 
@@ -92,43 +93,104 @@ namespace nexauth_server {
             if (user == null) {
                 slogged_payload.success = false;
                 slogged_payload.message = "User doesn't exist!";
+                slogged_payload.SendEncryptedAsync(client, aesProvider);
+                client.Close();
+                Console.WriteLine("Closing connection!");
+                return;
             }
-            /*else if (!await AwaitAuthentication()) {
+            CreateAuthRequest(user);
+            bool success = await CheckAuthConfirmation(user);
+            if (!success) {
                 slogged_payload.success = false;
                 slogged_payload.message = "Authentication timed out!";
-            }*/
-            else {
-                CreateAuthRequest(user);
-                slogged_payload.success = false;
-                slogged_payload.message = "WIP";
+            } else {
+                slogged_payload.success = true;
+                slogged_payload.message = "You are authenticated!";
+                Console.WriteLine("Request has been signed!");
             }
             slogged_payload.SendEncryptedAsync(client, aesProvider);
             client.Close();
+            Console.WriteLine("Closing connection!");
+        }
+
+        private async Task<bool> CheckAuthConfirmation(User user) {
+            int retries = 0;
+            while (retries < 30) {
+                using (var authContext = CreateDbContext()) {
+                    var authReq = authContext.AuthRequests.Where(r => r.UserId == user.Id).FirstOrDefault();
+                    if (authReq == null)
+                        throw new Exception($"Couldn't find any Auth requests for user {user.Username}!");
+                    if (authReq.Completed)
+                        return true;
+                }
+                Console.WriteLine($"Request for '{user.Username}' not signed yet! Rechecking in 2 seconds... ({retries+1})");
+                ++retries;
+                await Task.Delay(2000);
+            }
+            Console.WriteLine("Request was not signed in 60 seconds. Timing out authentication...");
+            return false;
         }
 
         private void CreateAuthRequest(User user) {
             var challenge = CreateChallenge();
-            var outdated = authContext.AuthRequests.Where(r => r.UserId == user.Id).ToList();
-            foreach (var entry in outdated) {
-                authContext.Remove(entry);
+            using (var authContext = CreateDbContext()) {
+                var outdated = authContext.AuthRequests.Where(r => r.UserId == user.Id).ToList();
+                foreach (var entry in outdated) {
+                    authContext.Remove(entry);
+                }
+                var request = new AuthRequest { UserId = user.Id, Challenge = challenge, Completed = false };
+                authContext.AuthRequests.Add(request);
+                authContext.SaveChanges();
             }
-            var request = new AuthRequest { UserId = user.Id, Challenge = challenge, Completed = false };
-            authContext.AuthRequests.Add(request);
-            authContext.SaveChanges();
             Console.WriteLine($"Created authentication request for user {user.Username}. Challenge: {challenge}");
+            SendNotification(user);
         }
 
+        private async void SendNotification(User user) {
+            var push = new ApplePush(ApplePushType.Alert)
+                .AddAlert("Authentication", "Authentication required!")
+                .AddToken(user.Token);
+            try {
+                var response = await APNSProvider.SendAsync(push);
+                if (response.IsSuccessful)
+                    Console.WriteLine("[APNS] Notification sent to authenticator!");
+                else {
+                    switch (response.Reason) {
+                        case ApnsResponseReason.BadCertificateEnvironment:
+                            Console.WriteLine("[APNS] Certificate is for wrong environment!");
+                            break;
+                        default:
+                            Console.WriteLine($"[APNS] Failed: {response.ReasonString}");
+                            break;
+                    }
+                }
+            } catch (TaskCanceledException) {
+                Console.WriteLine("[APNS] HTTP request timed out!");
+            } catch (HttpRequestException ex) {
+                Console.WriteLine($"[APNS] HTTP request failed {ex.Message}!");
+            } catch (ApnsCertificateExpiredException) {
+                Console.WriteLine("[APNS] Certificate expired!");
+            }
+        }
         private string CreateChallenge() {
-            byte[] buffer = new byte[128];
+            byte[] buffer = new byte[32];
             cprng.GetBytes(buffer);
             return Convert.ToBase64String(buffer); ;
         }
 
         private User GetUser(string username) {
-            return authContext.User.Where(u => u.Username == username).FirstOrDefault();
+            using (var authContext = CreateDbContext()) {
+                return authContext.User.Where(u => u.Username == username).FirstOrDefault();
+            }
         }
 
-        private AuthContext authContext;
+        private AuthContext CreateDbContext() {
+            var optionsBuilder = new DbContextOptionsBuilder<AuthContext>();
+            optionsBuilder.UseInMemoryDatabase("AuthContext");
+            return new AuthContext(optionsBuilder.Options);
+        }
+
+        private ApnsClient APNSProvider;
         private AESProvider aesProvider;
         RNGCryptoServiceProvider cprng;
         private RSACryptoServiceProvider cProvider;
