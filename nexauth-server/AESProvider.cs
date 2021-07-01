@@ -14,9 +14,9 @@ namespace nexauth {
             AES_KEY_256 = 8
         };
 
-        [DllImport("litecrypt.dll")]
+        [DllImport("litecrypt")]
         private static extern IntPtr AES_CTR_Init(AES_KEY_SIZE size, IntPtr key, ulong nonce);
-        [DllImport("litecrypt.dll")]
+        [DllImport("litecrypt")]
         private static extern void AES_GenCtrBlock(IntPtr ctx, IntPtr output);
         public AESProvider(AES_KEY_SIZE size, byte[] key, byte[] nonce) {
             Init(size, key, nonce);
