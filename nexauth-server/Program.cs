@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Net;
 using System.Security.Cryptography;
 using System.Text;
 using Microsoft.AspNetCore.Hosting;
@@ -18,7 +19,10 @@ namespace nexauth_server {
                     webBuilder.UseStartup<Startup>();
                     webBuilder.SuppressStatusMessages(true);
                     webBuilder.UseKestrel(options => {
-                        options.Listen(System.Net.IPAddress.Any, 80);
+                        options.Listen(IPAddress.Any, 80);
+                        options.Listen(IPAddress.Any, 443, listenOptions => {
+                            listenOptions.UseHttps("localhost.pfx");
+                        });
                     });
                     webBuilder.ConfigureLogging(logging => {
                         logging.ClearProviders();
