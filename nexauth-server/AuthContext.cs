@@ -14,6 +14,10 @@ namespace nexauth_server.Models {
             builder.Entity<User>().HasIndex(u => u.Username).IsUnique();
         }
 
+        protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder) {
+            optionsBuilder.UseInMemoryDatabase("AuthContext");
+        }
+
         public DbSet<AuthRequest> AuthRequests { get; set; }
 
         public DbSet<nexauth_server.Models.User> User { get; set; }
