@@ -27,6 +27,7 @@ namespace nexauth {
             Marshal.Copy(key, 0, key_ptr, 16);
             ulong lnonce = BitConverter.ToUInt64(nonce);
             AES_CTR_Ctx = AES_CTR_Init(size, key_ptr, lnonce);
+            Marshal.FreeHGlobal(key_ptr);
             keystream = new byte[4096];
             GenKeystream(4096);
         }
