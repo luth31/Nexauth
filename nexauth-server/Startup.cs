@@ -13,8 +13,7 @@ namespace nexauth_server {
         // For more information on how to configure your application, visit https://go.microsoft.com/fwlink/?LinkID=398940
         public void ConfigureServices(IServiceCollection services) {
             services.AddApns();
-            services.AddDbContext<AuthContext>(opt =>
-                                               opt.UseInMemoryDatabase("AuthContext"));
+            services.AddDbContext<AuthContext>();
             services.AddControllers();
             listener = new Listener("127.0.0.1", 8300);
             
