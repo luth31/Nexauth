@@ -8,6 +8,7 @@ using nexauth_server.Models;
 
 namespace nexauth_server.Models {
     public class AuthContext : DbContext {
+        public AuthContext() { }
         public AuthContext(DbContextOptions<AuthContext> options) : base(options) { }
 
         protected override void OnModelCreating(ModelBuilder builder) {
@@ -19,8 +20,7 @@ namespace nexauth_server.Models {
         }
 
         public DbSet<AuthRequest> AuthRequests { get; set; }
-
-        public DbSet<nexauth_server.Models.User> User { get; set; }
-        public DbSet<nexauth_server.Models.AuthRequest> Requests { get; set; }
+        public DbSet<User> User { get; set; }
+        public DbSet<AuthRequest> Requests { get; set; }
     }
 }
