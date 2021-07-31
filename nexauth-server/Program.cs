@@ -25,7 +25,8 @@ namespace nexauth_server {
                         });
                     });
                     webBuilder.ConfigureLogging(logging => {
-                        logging.ClearProviders();
+                        logging.AddFilter("Microsoft", LogLevel.Warning);
+                        logging.AddFilter("System", LogLevel.Warning);
                     });
                 });
     }
