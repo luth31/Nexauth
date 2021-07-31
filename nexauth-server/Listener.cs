@@ -119,7 +119,7 @@ namespace nexauth_server {
                 using (var authContext = CreateDbContext()) {
                     var authReq = authContext.AuthRequests.Where(r => r.UserId == user.Id).FirstOrDefault();
                     if (authReq == null)
-                        throw new Exception($"Couldn't find any Auth requests for user {user.Username}!");
+                        return false;
                     if (authReq.Completed)
                         return true;
                 }
@@ -173,7 +173,7 @@ namespace nexauth_server {
             }
         }
         private string CreateChallenge() {
-            byte[] buffer = new byte[32];
+            byte[] buffer = new byte[256];
             cprng.GetBytes(buffer);
             return Convert.ToBase64String(buffer); ;
         }
