@@ -1,0 +1,2 @@
+# Nexauth.Server
+[Nexauth.Server](https://github.com/luth31/Nexauth.Server) is a C# .NET 5 program that listens for TCP connections from [[Nexauth.Client]] using Nexauth Payload protocol, and provides an ASP.Net Core 5 API that the [[Nexauth-Authenticator]] can use to sign requests. Currently, an EF (Entity Framework) InMemory database is used to store user data and provide communication between the TCP listener and the API.

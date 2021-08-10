@@ -1,0 +1,2 @@
+# litecrypt
+[litecrypt](https://github.com/luth31/litecrypt) is a cryptographic library written in C. Currently, it provides software-implemented AES and AES-CTR for key sizes of 128, 192 and 256 bits.
