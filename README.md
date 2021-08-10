@@ -1,5 +1,5 @@
 # Nexauth
-Nexauth is an authentication system based on digital signature. 
+Nexauth is an authentication system based on ECC digital signatures. 
 
 Currently the project has 4 components:
 
