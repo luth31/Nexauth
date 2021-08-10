@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace nexauth_server.Models {
+namespace Nexauth.Server.Models {
     public class AuthResponse {
         public long reqId { get; set; }
         public long userId { get; set; }

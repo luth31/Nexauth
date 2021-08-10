@@ -4,9 +4,9 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
-using nexauth_server.Models;
+using Nexauth.Server.Models;
 
-namespace nexauth_server.Models {
+namespace Nexauth.Server.Models {
     public class AuthContext : DbContext {
         public AuthContext() { }
         public AuthContext(DbContextOptions<AuthContext> options) : base(options) { }

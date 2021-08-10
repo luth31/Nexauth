@@ -1,6 +1,6 @@
 ﻿using System.ComponentModel.DataAnnotations;
 
-namespace nexauth_server.Models {
+namespace Nexauth.Server.Models {
     public class User {
         public long Id { get; set; }
         [Required]

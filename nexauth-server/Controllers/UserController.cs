@@ -3,9 +3,9 @@ using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using nexauth_server.Models;
+using Nexauth.Server.Models;
 
-namespace nexauth_server.Controllers
+namespace Nexauth.Server.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]

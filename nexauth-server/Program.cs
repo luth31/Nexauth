@@ -7,7 +7,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 
-namespace nexauth_server {
+namespace Nexauth.Server {
     class Program {
         static void Main(string[] args) {
             CreateHostBuilder(args).Build().Run();

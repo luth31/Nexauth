@@ -6,15 +6,15 @@ using System.Threading.Tasks;
 using System.Net.Sockets;
 using System.Net;
 using System.Security.Cryptography;
-using nexauth;
+using Nexauth.Server;
 using System.IO;
 using System.IO.Compression;
-using nexauth_server.Models;
+using Nexauth.Server.Models;
 using Microsoft.EntityFrameworkCore;
 using dotAPNS;
 using System.Net.Http;
 
-namespace nexauth_server {
+namespace Nexauth.Server {
     class Listener {
         public Listener(string address, Int32 port) {
             IPAddress addr;

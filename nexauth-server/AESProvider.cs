@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 
-namespace nexauth {
+namespace Nexauth.Server {
     public class AESProvider {
         public enum AES_KEY_SIZE {
             AES_KEY_128 = 4,

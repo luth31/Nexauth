@@ -10,7 +10,7 @@ using System.Threading.Tasks;
 
 using System.Security.Cryptography;
 
-namespace nexauth_server {
+namespace Nexauth.Server {
     public class ECDSAProvider {
         public static bool VerifySignature(string key, string data, string signature) {
             byte[] signedData = Convert.FromBase64String(signature);

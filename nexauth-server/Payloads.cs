@@ -5,7 +5,7 @@ using System.Text.Json;
 using System.Net.Sockets;
 using System.Security.Cryptography;
 
-namespace nexauth {
+namespace Nexauth.Server {
     public enum Opcodes : Int32 {
         NULL = 0,
         CLIENT_HELLO = 1,
