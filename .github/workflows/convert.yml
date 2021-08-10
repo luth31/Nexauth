@@ -16,7 +16,7 @@ jobs:
         run: cargo install obsidian-export
       - name: Convert
         run: |
-	  mkdir ../convert
+          mkdir ../convert
           obsidian-export . ../convert      
       - name: Deploy
         uses: s0/git-publish-subdir-action@develop
