@@ -1,14 +1,9 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
 using System.Net.Sockets;
 using System.Net;
 using System.Security.Cryptography;
-using Nexauth.Server;
-using System.IO;
-using System.IO.Compression;
 using Nexauth.Server.Models;
 using Microsoft.EntityFrameworkCore;
 using dotAPNS;

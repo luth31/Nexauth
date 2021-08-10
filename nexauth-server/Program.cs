@@ -1,9 +1,5 @@
-﻿using System;
-using System.Net;
-using System.Security.Cryptography;
-using System.Text;
+﻿using System.Net;
 using Microsoft.AspNetCore.Hosting;
-using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 
