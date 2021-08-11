@@ -15,7 +15,9 @@ jobs:
       - name: git-checkout
         uses: actions/checkout@v2
       - name: Download obsidian-export
-        run: wget -O obsidian-export https://github.com/zoni/obsidian-export/releases/download/v0.7.0/obsidian-export_Linux-x86_64
+        run: |
+          wget -O obsidian-export https://github.com/zoni/obsidian-export/releases/download/v0.7.0/obsidian-export_Linux-x86_64
+          chmod +x ./obsidian-export
       - name: Convert
         run: |
           mkdir ../convert
