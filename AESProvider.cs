@@ -2,9 +2,10 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.InteropServices;
+using Nexauth.Server.Crypto;
 
 namespace Nexauth.Server {
-    public class AESProvider {
+    public class AESProvider: IEncryptor, IDecryptor {
         public enum AES_KEY_SIZE {
             AES_KEY_128 = 4,
             AES_KEY_192 = 6,
@@ -15,6 +16,7 @@ namespace Nexauth.Server {
         private static extern IntPtr AES_CTR_Init(AES_KEY_SIZE size, IntPtr key, ulong nonce);
         [DllImport("litecrypt")]
         private static extern void AES_GenCtrBlock(IntPtr ctx, IntPtr output);
+
         public AESProvider(AES_KEY_SIZE size, byte[] key, byte[] nonce) {
             Init(size, key, nonce);
         }
