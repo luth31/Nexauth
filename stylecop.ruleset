@@ -1,9 +1,0 @@
-<?xml version="1.0" encoding="utf-8"?>
-<RuleSet Name="Rules for Nexauth" ToolsVersion="15.0">
-  <Rules AnalyzerId="StyleCop.Analyzers" RuleNamespace="StyleCop.Analyzers">
-    <Rule Id="SA1500" Action="None" />
-    <Rule Id="SA1633" Action="None" />
-    <Rule Id="SA0001" Action="None" />
-    <Rule Id="SA1309" Action="None" />
-  </Rules>
-</RuleSet>
