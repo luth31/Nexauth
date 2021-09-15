@@ -1,7 +1,7 @@
 using System;
 
-namespace Nexauth.Networking {
-    public enum Opcode : Int32 {
+namespace Nexauth.Networking.Packets {
+    public enum Opcode : ushort {
         NULL = 0,
         CLIENT_HELLO = 1,
         SERVER_HELLO = 2,
@@ -11,6 +11,6 @@ namespace Nexauth.Networking {
         SERVER_SEND_AESKEY = 6,
         CLIENT_BEGIN_AUTH = 7,
         SERVER_AUTH_STANDBY = 8,
-        SERVER_AUTH_STATE_CHANGED = 9
+        SERVER_AUTH_STATE_CHANGED = 9,
     }
 }
