@@ -29,8 +29,13 @@ namespace Nexauth.Networking.Server {
                 _logger.LogError($"Socket Exception: {e.Message}");
             }
             _logger.LogInformation($"Started listening on {address}:{_options.Port}");
+            CancellationToken cancellationToken = _cancellationTokenSource.Token;
             while (true) {
-                var client = await _tcpListener.AcceptSocketAsync();
+                if (cancellationToken.IsCancellationRequested) {
+                    _logger.LogInformation($"Termination requested.");
+                    return;
+                }
+                var socket = await _tcpListener.AcceptSocketAsync();
                 _logger.LogInformation($"Client connected!");
             }
         }
