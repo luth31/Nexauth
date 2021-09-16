@@ -36,6 +36,7 @@ namespace Nexauth.Networking.Server {
                     return;
                 }
                 var socket = await _tcpListener.AcceptSocketAsync();
+                HandleClientAsync(socket, cancellationToken);
                 _logger.LogInformation($"Client connected!");
             }
         }
@@ -44,6 +45,18 @@ namespace Nexauth.Networking.Server {
             _cancellationTokenSource.Cancel();
             _tcpListener.Stop();
         }
+
+        private async void HandleClientAsync(Socket Socket, CancellationToken Token) {
+            while (true) {
+                if (Token.IsCancellationRequested) {
+                    Socket.Close();
+                    return;
+                }
+                // Handle data
+                await Task.Delay(50);
+            }
+        }
+        CancellationTokenSource _cancellationTokenSource;
         private ServerOptions _options;
         private TcpListener _tcpListener;
         private readonly ILogger<Server> _logger;
