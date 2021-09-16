@@ -16,7 +16,7 @@ namespace Nexauth.Networking.Server {
                 _options = new ServerOptions();
         }
 
-        public void Start() {
+        public async void Start() {
             // Parse should be safe
             IPAddress address = IPAddress.Parse(_options.Address);
             _tcpListener = new TcpListener(address, _options.Port);
@@ -25,8 +25,16 @@ namespace Nexauth.Networking.Server {
             } catch (SocketException e) {
                 _logger.LogError($"Socket Exception: {e.Message}");
             }
+            _logger.LogInformation($"Started listening on {address}:{_options.Port}");
+            while (true) {
+                var client = await _tcpListener.AcceptSocketAsync();
+                _logger.LogInformation($"Client connected!");
+            }
         }
 
+        public void Stop() {
+            _tcpListener.Stop();
+        }
         private ServerOptions _options;
         private TcpListener _tcpListener;
         private readonly ILogger<Server> _logger;
