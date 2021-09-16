@@ -1,10 +1,12 @@
 using System;
 using System.Net;
 using System.Net.Sockets;
+using Microsoft.Extensions.Logging;
 
 namespace Nexauth.Networking.Server {
     public class Server {
-        public Server(ServerOptions Options = null) {
+        public Server(ILogger<Server> logger, ServerOptions Options = null) {
+            _logger = logger;
             if (Options != null) {
                 // If IP is invalid fallback to localhost
                 if (!Util.IsIPv4Valid(Options.Address))
@@ -22,11 +24,12 @@ namespace Nexauth.Networking.Server {
             try {
                 _tcpListener.Start();
             } catch (SocketException e) {
-                Console.WriteLine($"Socket Exception: {e.Message}");
+                _logger.LogError($"Socket Exception: {e.Message}");
             }
         }
 
         private ServerOptions _options;
         private TcpListener _tcpListener;
+        private readonly ILogger<Server> _logger;
     }
 }
