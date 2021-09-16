@@ -1,6 +1,8 @@
 using System.Net;
 using System.Net.Sockets;
 using Microsoft.Extensions.Logging;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace Nexauth.Networking.Server {
     public class Server {
@@ -14,6 +16,7 @@ namespace Nexauth.Networking.Server {
             }
             else
                 _options = new ServerOptions();
+            _cancellationTokenSource = new CancellationTokenSource();
         }
 
         public async void Start() {
@@ -33,6 +36,7 @@ namespace Nexauth.Networking.Server {
         }
 
         public void Stop() {
+            _cancellationTokenSource.Cancel();
             _tcpListener.Stop();
         }
         private ServerOptions _options;
