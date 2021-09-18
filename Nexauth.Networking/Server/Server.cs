@@ -21,7 +21,7 @@ namespace Nexauth.Networking {
             _socketList = new List<Socket>();
         }
 
-        public async void Start() {
+        public void Start() {
             // Parse should be safe
             IPAddress address = IPAddress.Parse(_options.Address);
             _tcpListener = new TcpListener(address, _options.Port);
@@ -31,14 +31,18 @@ namespace Nexauth.Networking {
                 _logger.LogError($"Socket Exception: {e.Message}");
             }
             _logger.LogInformation($"Started listening on {address}:{_options.Port}");
-            CancellationToken cancellationToken = _cancellationTokenSource.Token;
+            _ = StartAsyncSocketAcceptor(_cancellationTokenSource.Token);
+        }
+
+        public async Task StartAsyncSocketAcceptor(CancellationToken Token) {
             while (true) {
-                if (cancellationToken.IsCancellationRequested) {
+                if (Token.IsCancellationRequested) {
                     _logger.LogInformation($"Termination requested.");
                     return;
                 }
                 var socket = await _tcpListener.AcceptSocketAsync();
-                HandleClientAsync(socket, cancellationToken);
+                _socketList.Add(socket);
+                HandleClientAsync(socket, Token);
                 _logger.LogInformation($"Client connected!");
             }
         }
