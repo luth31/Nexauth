@@ -3,8 +3,9 @@ using System.Net.Sockets;
 using Microsoft.Extensions.Logging;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Collections.Generic;
 
-namespace Nexauth.Networking.Server {
+namespace Nexauth.Networking {
     public class Server {
         public Server(ILogger<Server> logger, ServerOptions Options = null) {
             _logger = logger;
@@ -17,6 +18,7 @@ namespace Nexauth.Networking.Server {
             else
                 _options = new ServerOptions();
             _cancellationTokenSource = new CancellationTokenSource();
+            _socketList = new List<Socket>();
         }
 
         public async void Start() {
@@ -46,6 +48,18 @@ namespace Nexauth.Networking.Server {
             _tcpListener.Stop();
         }
 
+        public int GetConnectionCount {
+            get {
+                return _socketList.Count;
+            }
+        }
+
+        public bool IsBound {
+            get {
+                return _tcpListener.Server.IsBound;
+            }
+        }
+
         private async void HandleClientAsync(Socket Socket, CancellationToken Token) {
             while (true) {
                 if (Token.IsCancellationRequested) {
@@ -56,6 +70,7 @@ namespace Nexauth.Networking.Server {
                 await Task.Delay(50);
             }
         }
+        private List<Socket> _socketList;
         CancellationTokenSource _cancellationTokenSource;
         private ServerOptions _options;
         private TcpListener _tcpListener;
