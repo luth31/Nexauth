@@ -4,6 +4,7 @@ using Microsoft.Extensions.Logging;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Collections.Generic;
+using System;
 
 namespace Nexauth.Networking {
     public class Server {
@@ -18,7 +19,7 @@ namespace Nexauth.Networking {
             else
                 _options = new ServerOptions();
             _cancellationTokenSource = new CancellationTokenSource();
-            _socketList = new List<Socket>();
+            
         }
 
         public void Start() {
@@ -35,27 +36,29 @@ namespace Nexauth.Networking {
         }
 
         public async Task StartAsyncSocketAcceptor(CancellationToken Token) {
+            List<Socket> socketList = new List<Socket>();
             while (true) {
                 if (Token.IsCancellationRequested) {
                     _logger.LogInformation($"Termination requested.");
                     return;
                 }
                 var socket = await _tcpListener.AcceptSocketAsync();
-                _socketList.Add(socket);
+                if (socketList.Count < _options.MaxClients) {
+                    socketList.Add(socket);
                 HandleClientAsync(socket, Token);
                 _logger.LogInformation($"Client connected!");
+                }
+                else {
+                    _logger.LogInformation($"Client attempting connection but server is full!");
+                    Console.WriteLine("Disconnecting");
+                    socket.Close();
+                }
             }
         }
 
         public void Stop() {
             _cancellationTokenSource.Cancel();
             _tcpListener.Stop();
-        }
-
-        public int GetConnectionCount {
-            get {
-                return _socketList.Count;
-            }
         }
 
         public bool IsBound {
@@ -74,7 +77,7 @@ namespace Nexauth.Networking {
                 await Task.Delay(50);
             }
         }
-        private List<Socket> _socketList;
+
         CancellationTokenSource _cancellationTokenSource;
         private ServerOptions _options;
         private TcpListener _tcpListener;
