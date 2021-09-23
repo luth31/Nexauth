@@ -45,8 +45,8 @@ namespace Nexauth.Networking {
                 var socket = await _tcpListener.AcceptSocketAsync();
                 if (socketList.Count < _options.MaxClients) {
                     socketList.Add(socket);
-                HandleClientAsync(socket, Token);
-                _logger.LogInformation($"Client connected!");
+                    HandleClientAsync(socket, Token);
+                    _logger.LogInformation($"Client connected!");
                 }
                 else {
                     _logger.LogInformation($"Client attempting connection but server is full!");
@@ -60,7 +60,7 @@ namespace Nexauth.Networking {
             _cancellationTokenSource.Cancel();
             _tcpListener.Stop();
         }
-
+        
         public bool IsBound {
             get {
                 return _tcpListener.Server.IsBound;

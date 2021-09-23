@@ -7,15 +7,15 @@ namespace Nexauth.Networking.Tests {
     public class ServerTest {
 
         [Fact]
-        public void IsBound_ServerStarted_ReturnsTrue() {
+        public void IsBound_ServerListening_ReturnsTrue() {
             // Arrange
             var server = new Server(new NullLogger<Server>(), new ServerOptions());
             // Act
             server.Start();
-            // Assert
-            Assert.True(server.IsBound);
-            // Cleanup
+            bool isBound = server.IsBound;
             server.Stop();
+            // Assert
+            Assert.True(isBound);
         }
 
         [Theory]
