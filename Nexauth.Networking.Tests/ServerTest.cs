@@ -18,26 +18,24 @@ namespace Nexauth.Networking.Tests {
             Assert.True(isBound);
         }
 
-        [Theory]
-        [InlineData(0)]
-        [InlineData(1)]
-        [InlineData(2)]
-        [InlineData(3)]
-        [InlineData(5)]
-        [InlineData(10)]
-        public void GetConnectionCount_SomeClients_ReturnsInput(int clientsCount) {
+        [Fact]
+        public void VerifyClientDisconnected_ServerFull_ReturnsTrue() {
             // Arrange
-            var server = new Server(new NullLogger<Server>(), new ServerOptions());
+            var server = new Server(new NullLogger<Server>(), new ServerOptions(){ MaxClients = 10 });
             // Act
             server.Start();
-            for (int i = 0; i < clientsCount; ++i) {
+            for (int i = 0; i < 10; ++i) {
                 TcpClient client = new TcpClient();
                 client.Connect("127.0.0.1", 8300);
             }
+            TcpClient last_client = new TcpClient();
+            last_client.Connect("127.0.0.1", 8300);
             Thread.Sleep(10);
+            var disconnected = last_client.Client.Poll(1000, SelectMode.SelectRead) && (last_client.Client.Available == 0);
+            server.Stop();
             // Assert
-            Assert.Equal(clientsCount, server.GetConnectionCount);
-            // Cleanup
+            Assert.True(disconnected);
+        }
             server.Stop();
         }
     }
