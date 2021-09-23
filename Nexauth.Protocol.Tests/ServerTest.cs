@@ -3,8 +3,8 @@ using Microsoft.Extensions.Logging.Abstractions;
 using System.Threading;
 using System.Net.Sockets;
 
-namespace Nexauth.Networking.Tests {
-    public class ServerTest {
+namespace Nexauth.Protocol.Tests {
+        public class ServerTest {
 
         [Fact]
         public void IsBound_ServerListening_ReturnsTrue() {

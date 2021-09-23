@@ -1,6 +1,6 @@
 using System;
 
-namespace Nexauth.Networking.Packets {
+namespace Nexauth.Protocol.Packets {
     public enum Opcode : ushort {
         NULL = 0,
         CLIENT_HELLO = 1,

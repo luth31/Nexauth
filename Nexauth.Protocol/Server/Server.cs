@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 using System.Collections.Generic;
 using System;
 
-namespace Nexauth.Networking {
+namespace Nexauth.Protocol {
     public class Server {
         public Server(ILogger<Server> logger, ServerOptions Options = null) {
             _logger = logger;

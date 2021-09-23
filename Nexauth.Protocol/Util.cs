@@ -1,6 +1,6 @@
 using System.Net;
 
-namespace Nexauth.Networking {
+namespace Nexauth.Protocol {
     public static class Util {
         public static bool IsIPv4Valid(string Address) {
             // Special case, listen on all interfaces

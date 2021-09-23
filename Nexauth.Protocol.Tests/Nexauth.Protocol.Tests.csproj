@@ -21,7 +21,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Nexauth.Networking\Nexauth.Networking.csproj" />
+    <ProjectReference Include="..\Nexauth.Protocol\Nexauth.Protocol.csproj" />
   </ItemGroup>
 
 </Project>
