@@ -36,7 +36,26 @@ namespace Nexauth.Networking.Tests {
             // Assert
             Assert.True(disconnected);
         }
+
+        [Fact]
+        public void VerifyClientsConnected_ServerListening_ReturnsTrue() {
+            // Arrange
+            var server = new Server(new NullLogger<Server>(), new ServerOptions());
+            // Act
+            server.Start();
+            TcpClient[] clients = new TcpClient[10];
+            for (int i = 0; i < 10; ++i) {
+                clients[i] = new TcpClient();
+                clients[i].Connect("127.0.0.1", 8300);
+            }
+            Thread.Sleep(10);
+            var connected = true;
+            for (int i = 0; i < 10; ++i) {
+                connected = connected && !(clients[i].Client.Poll(1000, SelectMode.SelectRead) && (clients[i].Client.Available == 0));
+            }
             server.Stop();
+            // Assert
+            Assert.True(connected);
         }
     }
 }
