@@ -45,7 +45,7 @@ namespace Nexauth.Protocol {
 
         public static string VersionString {
             get {
-                return String.Concat(Major, ".", Minor, ".", Hotfix);
+                return String.Concat(Major, ".", Minor, ".", Patch);
             }
         }
     }
