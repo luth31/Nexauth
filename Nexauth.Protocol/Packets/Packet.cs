@@ -1,5 +1,5 @@
 namespace Nexauth.Protocol.Packets {
-    public class Packet {
-        PacketId Id;
+    public abstract class Packet {
+        public PacketId Id;
     }
 }
