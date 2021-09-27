@@ -73,8 +73,14 @@ namespace Nexauth.Protocol {
                     Socket.Close();
                     return;
                 }
-                // Handle data
-                await Task.Delay(50);
+                if (Socket.Poll(1000, SelectMode.SelectRead) && Socket.Available == 0) {
+                    _logger.LogInformation($"Connection closed by user.");
+                    return;
+                }
+                if (Socket.Available > 0) {
+                    
+                }
+                await Task.Delay(100);
             }
         }
 
