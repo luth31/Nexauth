@@ -30,7 +30,7 @@ namespace Nexauth.Protocol.Tests {
             }
             TcpClient last_client = new TcpClient();
             last_client.Connect("127.0.0.1", 8300);
-            Thread.Sleep(10);
+            Thread.Sleep(100);
             var disconnected = last_client.Client.Poll(1000, SelectMode.SelectRead) && (last_client.Client.Available == 0);
             server.Stop();
             // Assert
