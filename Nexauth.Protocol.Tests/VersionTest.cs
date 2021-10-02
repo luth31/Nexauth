@@ -5,7 +5,7 @@ namespace Nexauth.Protocol.Tests {
         public class VersionTest {
 
         [Fact]
-        public void IsSupported_CurrentVersion_ReturnsTrue() {
+        public void IsSupported_NoConditions_ReturnsTrue() {
             // Act
             bool supported = Version.IsSupported("0.1.0");
             // Assert
