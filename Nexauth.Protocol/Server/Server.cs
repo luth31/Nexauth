@@ -25,7 +25,8 @@ namespace Nexauth.Protocol {
             try {
                 _tcpListener.Start();
             } catch (SocketException e) {
-                _logger.LogError($"Socket Exception: {e.Message}");
+                _logger.LogError($"SocketException while starting: {e.Message}");
+                return;
             }
             _logger.LogInformation($"Started listening on {address}:{_options.Port}");
             _ = StartAsyncSocketAcceptor(_cancellationTokenSource.Token);
