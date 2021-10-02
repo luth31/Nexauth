@@ -60,6 +60,8 @@ namespace Nexauth.Protocol {
                 _tcpListener.Stop();
             } catch (SocketException e) {
                 _logger.LogError($"Socket Exception while stopping: {e.Message}");
+            } finally {
+                IsListening = false;
             }
         }
         
