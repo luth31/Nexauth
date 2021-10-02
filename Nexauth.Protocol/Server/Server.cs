@@ -16,6 +16,7 @@ namespace Nexauth.Protocol {
             _options = Options;
             _cancellationTokenSource = new CancellationTokenSource();
             _sessionMgr = new SessionMgr(_cancellationTokenSource.Token);
+            IsListening = false;
         }
 
         public void Start() {
@@ -68,6 +69,7 @@ namespace Nexauth.Protocol {
             }
         }
 
+        public bool IsListening { get; private set; }
         private CancellationTokenSource _cancellationTokenSource;
         private ServerOptions _options;
         private TcpListener _tcpListener;
