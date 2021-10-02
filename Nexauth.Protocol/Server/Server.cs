@@ -15,7 +15,7 @@ namespace Nexauth.Protocol {
                     Options.Address = "127.0.0.1";
             _options = Options;
             _cancellationTokenSource = new CancellationTokenSource();
-            
+            _sessionMgr = new SessionMgr(_cancellationTokenSource.Token);
         }
 
         public void Start() {
@@ -89,5 +89,6 @@ namespace Nexauth.Protocol {
         private ServerOptions _options;
         private TcpListener _tcpListener;
         private readonly ILogger<Server> _logger;
+        private SessionMgr _sessionMgr;
     }
 }
