@@ -7,7 +7,7 @@ namespace Nexauth.Protocol.Tests {
         public class ServerTest {
 
         [Fact]
-        public void IsBound_ServerListening_ReturnsTrue() {
+        public void IsBound_NoConditions_ReturnsTrue() {
             // Arrange
             var server = new Server(new NullLogger<Server>(), new ServerOptions());
             // Act
@@ -38,7 +38,7 @@ namespace Nexauth.Protocol.Tests {
         }
 
         [Fact]
-        public void VerifyClientsConnected_ServerListening_ReturnsTrue() {
+        public void VerifyClientsConnected_NoConditions_ReturnsTrue() {
             // Arrange
             var server = new Server(new NullLogger<Server>(), new ServerOptions());
             // Act
