@@ -30,7 +30,8 @@ namespace Nexauth.Protocol {
                 return;
             }
             _logger.LogInformation($"Started listening on {address}:{_options.Port}");
-            _ = StartAsyncSocketAcceptor(_cancellationTokenSource.Token);
+            IsListening = true;
+            AcceptorLoop();
         }
 
         public async Task StartAsyncSocketAcceptor(CancellationToken Token) {
