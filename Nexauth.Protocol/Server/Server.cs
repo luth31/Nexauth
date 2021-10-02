@@ -55,7 +55,11 @@ namespace Nexauth.Protocol {
 
         public void Stop() {
             _cancellationTokenSource.Cancel();
-            _tcpListener.Stop();
+            try {
+                _tcpListener.Stop();
+            } catch (SocketException e) {
+                _logger.LogError($"Socket Exception while stopping: {e.Message}");
+            }
         }
         
         public bool IsBound {
