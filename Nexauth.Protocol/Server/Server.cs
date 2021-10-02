@@ -68,24 +68,7 @@ namespace Nexauth.Protocol {
             }
         }
 
-        private async void HandleClientAsync(Socket Socket, CancellationToken Token) {
-            while (true) {
-                if (Token.IsCancellationRequested) {
-                    Socket.Close();
-                    return;
-                }
-                if (Socket.Poll(1000, SelectMode.SelectRead) && Socket.Available == 0) {
-                    _logger.LogInformation($"Connection closed by user.");
-                    return;
-                }
-                if (Socket.Available > 0) {
-                    
-                }
-                await Task.Delay(100);
-            }
-        }
-
-        CancellationTokenSource _cancellationTokenSource;
+        private CancellationTokenSource _cancellationTokenSource;
         private ServerOptions _options;
         private TcpListener _tcpListener;
         private readonly ILogger<Server> _logger;
