@@ -34,23 +34,29 @@ namespace Nexauth.Protocol {
             AcceptorLoop();
         }
 
-        public async Task StartAsyncSocketAcceptor(CancellationToken Token) {
-            List<Socket> socketList = new List<Socket>();
+        private async void AcceptorLoop() {
             while (true) {
-                if (Token.IsCancellationRequested) {
-                    _logger.LogInformation($"Termination requested.");
+                if (_cancellationTokenSource.IsCancellationRequested) {
+                    _logger.LogInformation("Termination requested.");
                     return;
                 }
-                var socket = await _tcpListener.AcceptSocketAsync();
-                if (socketList.Count < _options.MaxClients) {
-                    socketList.Add(socket);
-                    HandleClientAsync(socket, Token);
-                    _logger.LogInformation($"Client connected!");
+                TcpClient client;
+                try {
+                    client = await _tcpListener.AcceptTcpClientAsync();
+                } catch (InvalidOperationException) {
+                    _logger.LogError($"Attempting to accept sockets while TcpListener is not listening!");
+                    return;
+                } catch (SocketException e) {
+                    _logger.LogError($"Acceptor SocketError: {e.Message}");
+                    return;
+                }
+                if (_sessionMgr.SessionCount < _options.MaxClients) {
+                    _logger.LogInformation("Accepted connection.");
+                    _sessionMgr.AddClient(client);
                 }
                 else {
-                    _logger.LogInformation($"Client attempting connection but server is full!");
-                    Console.WriteLine("Disconnecting");
-                    socket.Close();
+                    client.Close();
+                    _logger.LogInformation("Server is full. Disconnecting...");
                 }
             }
         }
