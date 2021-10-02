@@ -8,16 +8,12 @@ using System;
 
 namespace Nexauth.Protocol {
     public class Server {
-        public Server(ILogger<Server> logger, ServerOptions Options = null) {
-            _logger = logger;
-            if (Options != null) {
-                // If IP is invalid fallback to localhost
-                if (!Util.IsIPv4Valid(Options.Address))
+        public Server(ILogger<Server> Logger, ServerOptions Options) {
+            _logger = Logger;
+            // If IP is invalid fallback to localhost
+            if (!Util.IsIPv4Valid(Options.Address))
                     Options.Address = "127.0.0.1";
-                _options = Options;
-            }
-            else
-                _options = new ServerOptions();
+            _options = Options;
             _cancellationTokenSource = new CancellationTokenSource();
             
         }
