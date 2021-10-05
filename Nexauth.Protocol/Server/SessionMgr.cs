@@ -32,6 +32,8 @@ namespace Nexauth.Protocol {
                 return _sessions.Count;
             }
         }
+
+        public bool Initialized { get; private set; }
         private CancellationToken _ct;
         private readonly ILogger<SessionMgr> _logger;
         int _sessionCounter;
