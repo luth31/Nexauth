@@ -20,6 +20,9 @@ namespace Nexauth.Protocol {
         }
         
         public async void Handle() {
+            if (!Initialized) {
+                throw new InvalidOperationException("ClientHandler not initialized.");
+            }
             while(true) {
                if (_ct.IsCancellationRequested) {
                     _client.Close();
