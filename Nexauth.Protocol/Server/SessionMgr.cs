@@ -21,7 +21,9 @@ namespace Nexauth.Protocol {
         }
 
         public void AddClient(TcpClient Client) {
-            ClientHandler handler = new ClientHandler(_sessionCounter, Client, _ct);
+            if (!Initialized) {
+                throw new InvalidOperationException("SessionMgr not initialized");
+            }
             if (_sessions.TryAdd(_sessionCounter, handler)) {
                 _logger.LogInformation($"Registered handler with Id {_sessionCounter}");
                 _sessionCounter++;
@@ -30,13 +32,16 @@ namespace Nexauth.Protocol {
         }
 
         public void ClientDisconnected(int Id) {
+            if (!Initialized) {
+                throw new InvalidOperationException("SessionMgr not initialized");
+            }
             if (_sessions.TryRemove(Id, out _))
                 _logger.LogInformation($"Removed handler with Id {Id}");
         }
 
         public int SessionCount {
             get {
-                return _sessions.Count;
+                return Initialized ? _sessions.Count : 0;
             }
         }
 
