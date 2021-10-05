@@ -37,6 +37,10 @@ namespace Nexauth.Protocol {
 
         private async void AcceptorLoop() {
             while (true) {
+                if (!_sessionMgr.Initialized) {
+                    _logger.LogError("SessionMgr is not initialized!");
+                    return;
+                }
                 if (_cancellationTokenSource.IsCancellationRequested) {
                     _logger.LogInformation("Termination requested.");
                     return;
