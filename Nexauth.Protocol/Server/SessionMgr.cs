@@ -24,6 +24,8 @@ namespace Nexauth.Protocol {
             if (!Initialized) {
                 throw new InvalidOperationException("SessionMgr not initialized");
             }
+            ClientHandler handler = _handlerFactory.Invoke();
+            handler.Init(_sessionCounter, Client, _ct);
             if (_sessions.TryAdd(_sessionCounter, handler)) {
                 _logger.LogInformation($"Registered handler with Id {_sessionCounter}");
                 _sessionCounter++;
