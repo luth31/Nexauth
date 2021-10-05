@@ -3,14 +3,21 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using System.Net.Sockets;
 using System.Threading;
+using System;
 
 namespace Nexauth.Protocol {
     public class SessionMgr {
-        public SessionMgr(CancellationToken Token, ILogger<SessionMgr> Logger = null) {
+        public SessionMgr(ILogger<SessionMgr> Logger, Func<ClientHandler> HandlerFactory){
+            _logger = Logger;
+            _handlerFactory = HandlerFactory;
+            Initialized = false;
+        }
+
+        public void Init(CancellationToken Token) {
             _ct = Token;
-            _logger = new NullLogger<SessionMgr>();
             _sessions = new ConcurrentDictionary<int, ClientHandler>();
             _sessionCounter = 0;
+            Initialized = true;
         }
 
         public void AddClient(TcpClient Client) {
@@ -36,6 +43,7 @@ namespace Nexauth.Protocol {
         public bool Initialized { get; private set; }
         private CancellationToken _ct;
         private readonly ILogger<SessionMgr> _logger;
+        private readonly Func<ClientHandler> _handlerFactory;
         int _sessionCounter;
         private ConcurrentDictionary<int, ClientHandler> _sessions;
     }
