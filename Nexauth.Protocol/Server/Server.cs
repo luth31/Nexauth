@@ -8,14 +8,13 @@ using System;
 
 namespace Nexauth.Protocol {
     public class Server {
-        public Server(ILogger<Server> Logger, ServerOptions Options) {
+        public Server(ILogger<Server> Logger, SessionMgr Session, ServerOptions Options) {
             _logger = Logger;
             // If IP is invalid fallback to localhost
             if (!Util.IsIPv4Valid(Options.Address))
                     Options.Address = "127.0.0.1";
             _options = Options;
-            _cancellationTokenSource = new CancellationTokenSource();
-            _sessionMgr = new SessionMgr(_cancellationTokenSource.Token);
+            _sessionMgr = Session;
             IsListening = false;
         }
 
@@ -23,6 +22,8 @@ namespace Nexauth.Protocol {
             // Parse should be safe
             IPAddress address = IPAddress.Parse(_options.Address);
             _tcpListener = new TcpListener(address, _options.Port);
+            _cancellationTokenSource = new CancellationTokenSource();
+            _sessionMgr.Init(_cancellationTokenSource.Token);
             try {
                 _tcpListener.Start();
             } catch (SocketException e) {
@@ -83,6 +84,6 @@ namespace Nexauth.Protocol {
         private ServerOptions _options;
         private TcpListener _tcpListener;
         private readonly ILogger<Server> _logger;
-        private SessionMgr _sessionMgr;
+        private readonly SessionMgr _sessionMgr;
     }
 }
