@@ -51,13 +51,17 @@ namespace Nexauth.Protocol {
                     _logger.LogError($"Acceptor SocketError: {e.Message}");
                     return;
                 }
-                if (_sessionMgr.SessionCount < _options.MaxClients) {
-                    _logger.LogInformation("Accepted connection.");
-                    _sessionMgr.AddClient(client);
-                }
-                else {
+                if (_sessionMgr.SessionCount >= _options.MaxClients) {
                     client.Close();
                     _logger.LogInformation("Server is full. Disconnecting...");
+                }
+                else {
+                    _logger.LogInformation("Accepted connection.");
+                    try {
+                        _sessionMgr.AddClient(client);
+                    } catch (InvalidOperationException e) {
+                        _logger.LogError($"Couldn't add client to SessionMgr: {e.Message}");
+                    }
                 }
             }
         }
