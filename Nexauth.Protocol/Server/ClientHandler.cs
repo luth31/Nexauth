@@ -7,11 +7,16 @@ using Microsoft.Extensions.Logging.Abstractions;
 
 namespace Nexauth.Protocol {
     public class ClientHandler {
-        public ClientHandler(int Id, TcpClient Client, CancellationToken Token) {
-            _logger = new NullLogger<ClientHandler>();
+        public ClientHandler(ILogger<ClientHandler> Logger) {
+            _logger = Logger;
+            Initialized = false;
+        }
+
+        public void Init(int Id, TcpClient Client, CancellationToken Token) {
             _id = Id;
             _client = Client;
             _ct = Token;
+            Initialized = true;
         }
         
         public async void Handle() {
@@ -36,9 +41,10 @@ namespace Nexauth.Protocol {
             }
         }
 
-        public readonly ILogger<ClientHandler> _logger;
-        int _id;
-        CancellationToken _ct;
-        TcpClient _client;
+        private bool Initialized;
+        private int _id;
+        private readonly ILogger<ClientHandler> _logger;
+        private CancellationToken _ct;
+        private TcpClient _client;
     }
 }
