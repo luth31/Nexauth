@@ -8,53 +8,52 @@ using System;
 
 namespace Nexauth.Protocol {
     public class Server {
-        public Server(ILogger<Server> Logger, SessionMgr Session, ServerOptions Options) {
+        public Server(ILogger<Server> Logger, IListenerSocket Listener,  ISessionManager SessionManager, ServerOptions Options) {
             _logger = Logger;
+            _listener = Listener;
             // If IP is invalid fallback to localhost
             if (!Util.IsIPv4Valid(Options.Address))
                     Options.Address = "127.0.0.1";
             _options = Options;
-            _sessionMgr = Session;
+            _sessionMgr = SessionManager;
             IsListening = false;
         }
 
         public void Start() {
             // Parse should be safe
-            IPAddress address = IPAddress.Parse(_options.Address);
-            _tcpListener = new TcpListener(address, _options.Port);
             _cancellationTokenSource = new CancellationTokenSource();
             _sessionMgr.Init(_cancellationTokenSource.Token);
             try {
-                _tcpListener.Start();
+                _listener.Listen(_options.Address, _options.Port);
             } catch (SocketException e) {
                 _logger.LogError($"SocketException while starting: {e.Message}");
                 return;
             }
-            _logger.LogInformation($"Started listening on {address}:{_options.Port}");
+            _logger.LogInformation($"Started listening on {_options.Address}:{_options.Port}");
             IsListening = true;
             AcceptorLoop();
         }
 
         private async void AcceptorLoop() {
             while (true) {
-                if (!_sessionMgr.Initialized) {
-                    _logger.LogError("SessionMgr is not initialized!");
-                    return;
-                }
                 if (_cancellationTokenSource.IsCancellationRequested) {
                     _logger.LogInformation("Termination requested.");
                     return;
                 }
-                TcpClient client;
+                Socket client = null;
                 try {
-                    client = await _tcpListener.AcceptTcpClientAsync();
+                    client = await _listener.AcceptSocketAsync();
+                } catch (ObjectDisposedException) {
+                    _logger.LogInformation("Object disposed.");
+                    break;
                 } catch (InvalidOperationException) {
-                    _logger.LogError($"Attempting to accept sockets while TcpListener is not listening!");
+                    _logger.LogWarning($"Attempting to accept sockets while Listener is not listening!");
                     return;
                 } catch (SocketException e) {
-                    _logger.LogError($"Acceptor SocketError: {e.Message}");
+                    _logger.LogError($"Listener SocketError: {e.Message}");
                     return;
                 }
+                _logger.LogInformation($"Max clients check. Connected: {_sessionMgr.SessionCount} Limit: {_options.MaxClients}");
                 if (_sessionMgr.SessionCount >= _options.MaxClients) {
                     client.Close();
                     _logger.LogInformation("Server is full. Disconnecting...");
@@ -62,7 +61,7 @@ namespace Nexauth.Protocol {
                 else {
                     _logger.LogInformation("Accepted connection.");
                     try {
-                        _sessionMgr.AddClient(client);
+                        _sessionMgr.RegisterClient(client);
                     } catch (InvalidOperationException e) {
                         _logger.LogError($"Couldn't add client to SessionMgr: {e.Message}");
                     }
@@ -73,7 +72,7 @@ namespace Nexauth.Protocol {
         public void Stop() {
             _cancellationTokenSource.Cancel();
             try {
-                _tcpListener.Stop();
+                _listener.Close();
             } catch (SocketException e) {
                 _logger.LogError($"Socket Exception while stopping: {e.Message}");
             } finally {
@@ -83,15 +82,15 @@ namespace Nexauth.Protocol {
         
         public bool IsBound {
             get {
-                return _tcpListener.Server.IsBound;
+                return _listener.IsBound;
             }
         }
 
         public bool IsListening { get; private set; }
         private CancellationTokenSource _cancellationTokenSource;
         private ServerOptions _options;
-        private TcpListener _tcpListener;
+        private IListenerSocket _listener;
         private readonly ILogger<Server> _logger;
-        private readonly SessionMgr _sessionMgr;
+        private readonly ISessionManager _sessionMgr;
     }
 }
