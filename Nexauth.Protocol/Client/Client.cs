@@ -22,7 +22,7 @@ namespace Nexauth.Protocol {
 
         public async Task HandleConnectionAsync(CancellationToken Token) {
             while (true) {
-                
+                await Task.Delay(100);
             }
         }
 
