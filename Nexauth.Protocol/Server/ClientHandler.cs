@@ -6,48 +6,71 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 
 namespace Nexauth.Protocol {
-    public class ClientHandler {
+    public class ClientHandler : ISessionHandler {
         public ClientHandler(ILogger<ClientHandler> Logger) {
             _logger = Logger;
             Initialized = false;
         }
 
-        public void Init(int Id, TcpClient Client, CancellationToken Token) {
+        public void Init(int Id, Socket Client, CancellationToken Token) {
             _id = Id;
             _client = Client;
             _ct = Token;
             Initialized = true;
         }
         
-        public async void Handle() {
+        public async void Execute() {
             if (!Initialized) {
                 throw new InvalidOperationException("ClientHandler not initialized.");
             }
             while(true) {
                if (_ct.IsCancellationRequested) {
                     _client.Close();
-                    _logger.LogInformation($"Cancellation requested. Disconnecting client {_id}");
+                    _logger.LogTrace($"Cancellation requested. Client {_id} disconnected.");
                     return;
                 }
-                if (_client.Client.Poll(1000, SelectMode.SelectRead) && _client.Client.Available == 0) {
+                if (IsDisconnected()) {
                     _logger.LogInformation($"Client {_id} disconnected.");
+                    // Announce to SessionManager
                     return;
                 }
-                if (_client.Available > 0) {
-                    Console.WriteLine($"ToDo: Handle data. Available data: {_client.Available}");
-                    byte[] data = new byte[_client.Available];
-                    _client.GetStream().Read(data, 0, _client.Available);
-                    string str = System.Text.Encoding.ASCII.GetString(data);
-                    Console.WriteLine($"Received data from client {_id}: {str}");
+                if (IsDataAvailable()) {
+                    // Packet packet = _parser.Parse();
+                    // _handler.Handle(packet);
                 }
                 await Task.Delay(100);
             }
         }
 
+        public bool IsDisconnected() {
+            bool disconnected = true;
+            try {
+                disconnected = _client.Poll(1000, SelectMode.SelectRead) && _client.Available == 0;
+            } catch (SocketException e) {
+                _logger.LogError($"SocketError while checking connection status: {e.Message}");
+            } catch (ObjectDisposedException) {
+                _logger.LogWarning($"Attempting to check connection status of disposed socket!");
+            }
+            return disconnected;
+        }
+
+        public bool IsDataAvailable() {
+            bool available = false;
+            try {
+                available = _client.Available > 0;
+            } catch (SocketException e) {
+                _logger.LogError($"SocketError while checking available data: {e.Message}");
+            } catch (ObjectDisposedException) {
+                _logger.LogWarning($"Attempting to check available data of disposed socket!");
+            }
+            return available;
+        }
+
+        private const int MaxPacketSize = 1000;
         private bool Initialized;
         private int _id;
         private readonly ILogger<ClientHandler> _logger;
         private CancellationToken _ct;
-        private TcpClient _client;
+        private Socket _client;
     }
 }
