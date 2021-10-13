@@ -6,7 +6,14 @@ using System.Net.Sockets;
 namespace Nexauth.Protocol.Tests {
         public class ServerTest {
 
-        [Fact]
+        Server _server;
+        ILoggerFactory _loggerFactory;
+        
+        const int ClientCount = 10;
+
+        public ServerTest() {
+            _loggerFactory = Util.GetLoggerFactory();
+        }
         public void IsBound_NoConditions_ReturnsTrue() {
             // Arrange
             var server = new Server(new NullLogger<Server>(), new ServerOptions());
@@ -40,20 +47,24 @@ namespace Nexauth.Protocol.Tests {
         [Fact]
         public void VerifyClientsConnected_NoConditions_ReturnsTrue() {
             // Arrange
-            var server = new Server(new NullLogger<Server>(), new ServerOptions());
+            var handler = new ClientHandler(_loggerFactory.CreateLogger<ClientHandler>());
+            var factoryMock = new Mock<Func<ClientHandler>>();
+            factoryMock.Setup(f => f.Invoke()).Returns(handler);
+
+            _server = _server = new Server(_loggerFactory.CreateLogger<Server>(),
+                                            new Listener(),
+                                            new SessionManager(_loggerFactory.CreateLogger<SessionManager>(), factoryMock.Object),
+                                            new ServerOptions());
+                                            
+            TcpClient[] clients;
+            _server.Start();
+
             // Act
-            server.Start();
-            TcpClient[] clients = new TcpClient[10];
-            for (int i = 0; i < 10; ++i) {
-                clients[i] = new TcpClient();
-                clients[i].Connect("127.0.0.1", 8300);
-            }
-            Thread.Sleep(10);
-            var connected = true;
-            for (int i = 0; i < 10; ++i) {
-                connected = connected && !(clients[i].Client.Poll(1000, SelectMode.SelectRead) && (clients[i].Client.Available == 0));
-            }
-            server.Stop();
+            clients = Util.ConnectClients(ClientCount, "127.0.0.1", 8300);
+            Thread.Sleep(100);
+            var connected = clients.AreConnected();
+            _server.Stop();
+
             // Assert
             Assert.True(connected);
         }
