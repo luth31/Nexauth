@@ -3,11 +3,11 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 16
 VisualStudioVersion = 16.0.30114.105
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Nexauth.Networking", "Nexauth.Networking\Nexauth.Networking.csproj", "{1B629F47-0A17-47AA-AC58-55C6B853858A}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Nexauth.Protocol", "Nexauth.Protocol\Nexauth.Protocol.csproj", "{1B629F47-0A17-47AA-AC58-55C6B853858A}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Nexauth.Server", "Nexauth.Server\Nexauth.Server.csproj", "{32BFECAD-752C-4996-84AC-47C5A8EB0D6D}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Nexauth.Networking.Tests", "Nexauth.Networking.Tests\Nexauth.Networking.Tests.csproj", "{62096881-208A-42A1-B735-A1CECEEE2851}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Nexauth.Protocol.Tests", "Nexauth.Protocol.Tests\Nexauth.Protocol.Tests.csproj", "{62096881-208A-42A1-B735-A1CECEEE2851}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Nexauth.Client", "Nexauth.Client\Nexauth.Client.csproj", "{228C5372-335B-4EE5-A953-81F31E01C7E3}"
 EndProject
