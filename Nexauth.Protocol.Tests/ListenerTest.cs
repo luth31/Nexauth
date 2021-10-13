@@ -28,10 +28,9 @@ namespace Nexauth.Protocol.Tests {
         public void IsBound_AfterClose_ReturnsFalse() {
             // Arrange
             _listener.Listen(Host, Port);
-            TcpClient client = null;
             // Act
             _listener.Close();
-            var exception = Record.Exception(() => client.ConnectClient(Host,Port));
+            var exception = Record.Exception(() => Util.ConnectClient(Host,Port));
             // Assert
             Assert.NotNull(exception);
             Assert.IsAssignableFrom<SocketException>(exception);
@@ -40,10 +39,10 @@ namespace Nexauth.Protocol.Tests {
         public async void ClientConnected_NoConditions_ReturnsTrue() {
             // Arrange
             _listener.Listen(Host, Port);
-            TcpClient client = null;
+            TcpClient client;
 
             // Act
-            client.ConnectClient(Host, Port);
+            client = Util.ConnectClient(Host, Port);
             _ = await _listener.AcceptSocketAsync();
 
             // Assert
