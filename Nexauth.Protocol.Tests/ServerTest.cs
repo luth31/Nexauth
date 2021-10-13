@@ -1,7 +1,9 @@
 using Xunit;
-using Microsoft.Extensions.Logging.Abstractions;
 using System.Threading;
 using System.Net.Sockets;
+using Moq;
+using Microsoft.Extensions.Logging;
+using System;
 
 namespace Nexauth.Protocol.Tests {
     public class ServerTest {
