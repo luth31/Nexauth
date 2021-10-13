@@ -3,17 +3,19 @@ using System.Net.Sockets;
 
 namespace Nexauth.Protocol.Tests {
     public static class Util {
-        public static void ConnectClient(this TcpClient client, string Host, int Port) {
-            client = new TcpClient();
+        public static TcpClient ConnectClient(string Host, int Port) {
+            TcpClient client = new TcpClient();
             client.Connect(IPAddress.Parse(Host), Port);
+            return client;
         }
 
-        public static void ConnectClients(this TcpClient[] clients, int Count, string Host, int Port) {
-            clients = new TcpClient[Count]; 
+        public static TcpClient[] ConnectClients(int Count, string Host, int Port) {
+            TcpClient[] clients = new TcpClient[Count]; 
             for (int i = 0; i < Count; ++i) {
                 clients[i] = new TcpClient();
                 clients[i].Connect(IPAddress.Parse(Host), Port);
             }
+            return clients;
         }
 
         public static void Disconnect(this TcpClient[] clients) {
