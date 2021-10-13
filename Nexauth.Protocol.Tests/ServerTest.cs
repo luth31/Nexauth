@@ -14,13 +14,22 @@ namespace Nexauth.Protocol.Tests {
         public ServerTest() {
             _loggerFactory = Util.GetLoggerFactory();
         }
+
+        [Fact]
         public void IsBound_NoConditions_ReturnsTrue() {
             // Arrange
-            var server = new Server(new NullLogger<Server>(), new ServerOptions());
+            _sessionManager = new Mock<ISessionManager>();
+            _server = new Server(_loggerFactory.CreateLogger<Server>(),
+                                new Listener(),
+                                _sessionManager.Object,
+                                new ServerOptions());
+            _server.Start();
+
             // Act
-            server.Start();
-            bool isBound = server.IsBound;
-            server.Stop();
+            bool isBound = _server.IsBound;
+            
+            _server.Stop();
+
             // Assert
             Assert.True(isBound);
         }
