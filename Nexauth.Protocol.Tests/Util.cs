@@ -1,5 +1,6 @@
 using System.Net;
 using System.Net.Sockets;
+using Microsoft.Extensions.Logging;
 
 namespace Nexauth.Protocol.Tests {
     public static class Util {
@@ -37,5 +38,18 @@ namespace Nexauth.Protocol.Tests {
                 connected = connected && !(clients[i].Client.Poll(1000, SelectMode.SelectRead) && (clients[i].Client.Available > 0));
             return connected;
         }
+
+        public static ILoggerFactory GetLoggerFactory() {
+            if (_factory == null) {
+                var config = new NLog.Config.LoggingConfiguration();
+                var logconsole = new NLog.Targets.ConsoleTarget("logconsole");
+                config.AddRule(NLog.LogLevel.Trace, NLog.LogLevel.Fatal, logconsole);
+                NLog.LogManager.Configuration = config;
+                _factory = new NLog.Extensions.Logging.NLogLoggerFactory();
+            }
+            return _factory;
+        }
+
+        static ILoggerFactory _factory;
     }
 }
